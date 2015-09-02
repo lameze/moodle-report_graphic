@@ -58,6 +58,12 @@ class report_graphic_renderable implements renderable {
      */
     public $mostactivecourses;
 
+    public $showusers;
+
+    public $usersgrades;
+
+    public $eventsbycoursemodule;
+
     /**
      * Constructor.
      *
@@ -118,6 +124,10 @@ class report_graphic_renderable implements renderable {
 
         // Monthly user activity.
         $this->activitybyperiod = $graphreport->get_monthly_user_activity();
+
+        $this->usersgrades = $graphreport->get_users_grades();
+
+        $this->eventsbycoursemodule = $graphreport->get_events_course_module();
     }
 
     /**
@@ -126,5 +136,39 @@ class report_graphic_renderable implements renderable {
     public function get_courses_activity() {
         $graphreport = new report_graphic();
         $this->mostactivecourses = $graphreport->get_courses_activity();
+    }
+
+    /**
+     * Return list of users.
+     *
+     * @return array list of users.
+     */
+    public function get_user_list() {
+        global $CFG, $SITE;
+
+        $courseid = $SITE->id;
+        if (!empty($this->course)) {
+            $courseid = $this->course->id;
+        }
+        $context = context_course::instance($courseid);
+        $limitfrom = empty($this->showusers) ? 0 : '';
+        $limitnum  = empty($this->showusers) ? COURSE_MAX_USERS_PER_DROPDOWN + 1 : '';
+        $courseusers = get_enrolled_users($context, '', 0, 'u.id, ' . get_all_user_name_fields(true, 'u'),
+            null, $limitfrom, $limitnum);
+
+        if (count($courseusers) < COURSE_MAX_USERS_PER_DROPDOWN && !$this->showusers) {
+            $this->showusers = true;
+        }
+
+        $users = array();
+        if ($this->showusers) {
+            if ($courseusers) {
+                foreach ($courseusers as $courseuser) {
+                    $users[$courseuser->id] = fullname($courseuser, has_capability('moodle/site:viewfullnames', $context));
+                }
+            }
+            $users[$CFG->siteguest] = get_string('guestuser');
+        }
+        return $users;
     }
 }

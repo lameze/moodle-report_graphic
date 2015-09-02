@@ -28,6 +28,7 @@ $string['event'] = 'Event';
 $string['eventsmosttriggered'] = 'Most triggered events';
 $string['eventsbymonth'] = 'Events by month ({$a})';
 $string['graphic:view'] = 'View events graphic report';
+$string['gradesbymonth'] = 'Max Grades by month ({$a})';
 $string['generate'] = 'Generate';
 $string['menu'] = 'Events Graphic Report';
 $string['percentage'] = 'Percentage';

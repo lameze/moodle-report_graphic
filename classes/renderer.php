@@ -54,11 +54,13 @@ class report_graphic_renderer extends plugin_renderer_base {
         $renderable = $this->renderable;
         $courses = $renderable->get_course_list();
         $selectedcourseid = empty($renderable->course) ? 0 : $renderable->course->id;
-
+        $users = $renderable->get_user_list();
+        $selecteduserid = empty($renderable->user) ? 0 : $renderable->user->id;
         echo html_writer::start_tag('form', array('class' => 'logselecform', 'action' => 'course.php', 'method' => 'get'));
         echo html_writer::start_div();
         echo html_writer::label(get_string('selectacourse'), 'courseid', false);
         echo html_writer::select($courses, "id", $selectedcourseid, null, array('id' => 'courseid'));
+        echo html_writer::select($users, "userid", $selecteduserid, null, array('userid' => 'userid'));
         echo html_writer::empty_tag('input', array('type' => 'submit', 'value' => get_string('generate', 'report_graphic')));
         echo html_writer::end_div();
         echo html_writer::end_tag('form');
@@ -72,6 +74,8 @@ class report_graphic_renderer extends plugin_renderer_base {
         echo $renderable->mostactiveusers;
         echo $renderable->mosttriggeredevents;
         echo $renderable->activitybyperiod;
+        echo $renderable->usersgrades;
+        echo $renderable->eventsbycoursemodule;
     }
 
     /**

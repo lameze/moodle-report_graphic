@@ -23,16 +23,20 @@
  */
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
-require_once($CFG->dirroot . '/course/lib.php');
-
+//require_once($CFG->dirroot . '/course/lib.php');
+//require_once($CFG->dirroot.'/grade/report/grader/lib.php');
+//require_once($CFG->dirroot.'/grade/lib.php');
+//require_once($CFG->libdir.'/gradelib.php');
 require_login();
 
-$context = context_system::instance();
-require_capability('report/graphic:view', $context);
+
+
 $courseid = required_param('id', 'int');
 if (!$course = get_course($courseid)) {
     print_error('nocourseid');
 }
+$context = context_course::instance($courseid);
+require_capability('report/graphic:view', $context);
 admin_externalpage_setup('report_graphic');
 $actionurl = new moodle_url('/report/graphic/course.php');
 $PAGE->set_context($context);
@@ -41,8 +45,15 @@ $PAGE->set_title(get_string('pluginname', 'report_graphic'));
 $PAGE->set_heading(get_string('pluginname', 'report_graphic'));
 $PAGE->set_pagelayout('report');
 echo $OUTPUT->header();
+$page = 0;
+//$gpr = new grade_plugin_return(array('type'=>'report', 'plugin'=>'grader', 'courseid'=>$courseid, 'page'=>$page));
+//$report = new grade_report_grader($courseid, $gpr, $context);
+//$report->load_users();
+//$report->load_final_grades();
+//print_object($report->grades);
 $renderable = new report_graphic_renderable($course);
 $renderer = $PAGE->get_renderer('report_graphic');
 echo $renderer->render($renderable);
 echo $renderer->report_generate_charts();
+
 echo $OUTPUT->footer();
