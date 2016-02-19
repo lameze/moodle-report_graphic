@@ -25,7 +25,7 @@
  */
 
 defined('MOODLE_INTERNAL') || die;
-global $CFG;
+
 // Just a link to course report.
 $ADMIN->add('reports', new admin_externalpage('report_graphic', get_string('menu', 'report_graphic'),
         $CFG->wwwroot . "/report/graphic/index.php", 'report/log:view'));

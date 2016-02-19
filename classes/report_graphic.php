@@ -484,69 +484,36 @@ class report_graphic extends Gcharts {
     public function get_events_course_module() {
         global $DB;
 
-        $sql = "
-        SELECT DISTINCT l.contextinstanceid,
-(SELECT COUNT(*) FROM mdl_logstore_standard_log lc WHERE lc.crud = 'c' and lc.courseid = l.courseid and lc.contextinstanceid = l.contextinstanceid) as quant_c,
-(SELECT COUNT(*) FROM mdl_logstore_standard_log lr WHERE lr.crud = 'r' and lr.courseid = l.courseid and lr.contextinstanceid = l.contextinstanceid) as quant_r ,
-(SELECT COUNT(*) FROM mdl_logstore_standard_log lu WHERE lu.crud = 'u' and lu.courseid = l.courseid and lu.contextinstanceid = l.contextinstanceid) as quant_u ,
-(SELECT COUNT(*) FROM mdl_logstore_standard_log ld WHERE ld.crud = 'd' and ld.courseid = l.courseid and ld.contextinstanceid = l.contextinstanceid) as quant_d,
-COUNT(*) as total
-FROM mdl_logstore_standard_log l
-INNER JOIN mdl_course c ON c.id = l.courseid
-WHERE l.courseid = 5 AND l.contextinstanceid IS NOT NULL
-GROUP BY l.contextinstanceid, quant_c,quant_r,quant_u,quant_d";
-                $result = $DB->get_records_sql($sql);
-print_object($result);
-        //$modules = get_fast_modinfo($this->courseid)
-       // print_object($modules); echo count($modules);die(10);
-//        foreach ($result as $cmid => $values) {
-//            if (!empty($cmid)) {
-//            $coursemodule = get_coursemodule_from_id('',$cmid, $this->courseid);
-//            print_object($coursemodule);
-//            }
-//        }
-        /**
-         *
-         var data = google.visualization.arrayToDataTable([
-        ['Genre', 'Fantasy & Sci Fi', 'Romance', 'Mystery/Crime', 'General',
-        'Western', 'Literature', { role: 'annotation' } ],
-        ['2010', 10, 24, 20, 32, 18, 5, ''],
-        ['2020', 16, 22, 23, 30, 16, 9, ''],
-        ['2030', 28, 19, 29, 30, 12, 13, '']
-        ]);
+        $sql = "SELECT DISTINCT l.contextinstanceid,
+                (SELECT COUNT(*) FROM mdl_logstore_standard_log lc WHERE lc.crud = 'c' and lc.courseid = l.courseid and lc.contextinstanceid = l.contextinstanceid) AS quant_c,
+                (SELECT COUNT(*) FROM mdl_logstore_standard_log lr WHERE lr.crud = 'r' and lr.courseid = l.courseid and lr.contextinstanceid = l.contextinstanceid) AS quant_r,
+                (SELECT COUNT(*) FROM mdl_logstore_standard_log lu WHERE lu.crud = 'u' and lu.courseid = l.courseid and lu.contextinstanceid = l.contextinstanceid) AS quant_u,
+                (SELECT COUNT(*) FROM mdl_logstore_standard_log ld WHERE ld.crud = 'd' and ld.courseid = l.courseid and ld.contextinstanceid = l.contextinstanceid) AS quant_d,
+                COUNT(*) AS total
+                FROM {" . $this->logtable . "} l
+                INNER JOIN mdl_course c ON c.id = l.courseid
+                WHERE l.courseid = :courseid AND l.contextinstanceid IS NOT NULL
+                GROUP BY l.contextinstanceid, quant_c,quant_r,quant_u,quant_d
+                ORDER BY total DESC";
+        $result = $DB->get_records_sql($sql, array('courseid' => $this->courseid));
 
-        var options = {
-        width: 600,
-        height: 400,
-        legend: { position: 'top', maxLines: 3 },
-        bar: { groupWidth: '75%' },
-        isStacked: true,
-        };
-         */
         // Format the data to google charts.
         $i = 1;
-        $cmactivity[0] = array('Module', 'Creategggggg', 'Read', 'Update','Delete');
-//        foreach ($result as $courseid => $coursedata) {
-//            $courseactivity[$i] = array($coursedata->shortname, (int)$coursedata->quant);
-//            $i++;
-//        }
+        $cmactivity[0] = array('Module', 'Create', 'Read', 'Update','Delete');
         foreach ($result as $cmid => $values) {
             if (!empty($cmid)) {
                 $coursemodule = get_coursemodule_from_id('',$cmid, $this->courseid);
 
-                //if (!empty($coursemodule)) {
-                $title = $coursemodule->name .$cmid.'('.$coursemodule->modname.')';
-                $cmactivity[$i] = array($title, (int)$values->quant_c, (int)$values->quant_r,(int)$values->quant_u, (int)$values->quant_d);
-                $i++;
-//                } else {
-//                    echo "empty";
-//                }
+                if (!empty($coursemodule)) {
+                    $title = $coursemodule->name .'('.$coursemodule->modname.')';
+                    $cmactivity[$i] = array($title, (int)$values->quant_c, (int)$values->quant_r,(int)$values->quant_u, (int)$values->quant_d);
+                    $i++;
+                }
             }
         }
-print_object($cmactivity);
+
         $this->load(array('graphic_type' => 'ColumnChart'));
         $this->set_options(array('title' => 'Events by Course Module (CRUD)', 'isStacked' => true));
-
         return $this->generate($cmactivity);
     }
 }

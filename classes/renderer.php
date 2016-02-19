@@ -44,6 +44,7 @@ class report_graphic_renderer extends plugin_renderer_base {
     protected function render_report_graphic(report_graphic_renderable $renderable) {
         $this->renderable = $renderable;
         $this->report_selector_form();
+        //$this->page->requires->css('/report/graphic/lib/c3/c3.css');
     }
 
     /**
@@ -54,13 +55,15 @@ class report_graphic_renderer extends plugin_renderer_base {
         $renderable = $this->renderable;
         $courses = $renderable->get_course_list();
         $selectedcourseid = empty($renderable->course) ? 0 : $renderable->course->id;
-        $users = $renderable->get_user_list();
+        //$users = $renderable->get_user_list();
+        $period = $renderable->get_period_list();
         $selecteduserid = empty($renderable->user) ? 0 : $renderable->user->id;
         echo html_writer::start_tag('form', array('class' => 'logselecform', 'action' => 'course.php', 'method' => 'get'));
         echo html_writer::start_div();
         echo html_writer::label(get_string('selectacourse'), 'courseid', false);
         echo html_writer::select($courses, "id", $selectedcourseid, null, array('id' => 'courseid'));
-        echo html_writer::select($users, "userid", $selecteduserid, null, array('userid' => 'userid'));
+        echo html_writer::label('Select a period', 'period', false);
+        echo html_writer::select($period, "period", null, false);
         echo html_writer::empty_tag('input', array('type' => 'submit', 'value' => get_string('generate', 'report_graphic')));
         echo html_writer::end_div();
         echo html_writer::end_tag('form');
@@ -71,11 +74,23 @@ class report_graphic_renderer extends plugin_renderer_base {
     public function report_generate_charts() {
         $renderable = $this->renderable;
         echo $renderable->get_gcharts_data();
-        echo $renderable->mostactiveusers;
-        echo $renderable->mosttriggeredevents;
-        echo $renderable->activitybyperiod;
-        echo $renderable->usersgrades;
-        echo $renderable->eventsbycoursemodule;
+        echo "<h5>Events by user</h5>";
+        echo "<div id=\"chart\"></div>";
+        echo "<br /><hr /><br />";
+        echo "<h5>Most triggered events</h5>";
+        echo "<div id=\"chart_most_triggered\"></div>";
+        echo "<br /><hr /><br />";
+        echo "<h5>Events by month</h5>";
+        echo "<div id=\"chart_events_monthly\"></div>";
+        echo "<br /><hr /><br />";
+        echo "<div id=\"chart_events_cm\"></div>";
+        echo html_writer::start_tag('script', array('type' => 'text/javascript'));
+        $this->get_chart_json($renderable->mostactiveusers);
+        $this->get_chart_json($renderable->mosttriggeredevents);
+        $this->get_chart_json($renderable->activitybyperiod);
+        $this->get_chart_json($renderable->eventsbycoursemodule);
+        echo html_writer::end_tag('script');
+        //echo $renderable->usersgrades;
     }
 
     /**
@@ -84,5 +99,9 @@ class report_graphic_renderer extends plugin_renderer_base {
     public function report_course_activity_chart() {
         $this->renderable->get_courses_activity();
         echo $this->renderable->mostactivecourses;
+    }
+
+    public function get_chart_json($chartjson) {
+        $this->page->requires->js_amd_inline("require([\"report_graphic/c3loader\"], function(c3) { ".$chartjson->render('chart', true)." });");
     }
 }

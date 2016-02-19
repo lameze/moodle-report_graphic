@@ -1,0 +1,14 @@
+{
+    "name": "Anu/demo",
+    "authors": [
+        {
+            "name": "Anuradha Jayathilaka",
+            "email": "astroanu2004@gmail.com"
+        }
+    ],
+    "autoload": {
+		"classmap": [
+			"../src"
+		]
+	}
+}

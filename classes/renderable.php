@@ -22,7 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die;
-require_once($CFG->dirroot . '/report/graphic/classes/report_graphic.php');
+require_once($CFG->dirroot . '/report/graphic/classes/report_graphic_c3.php');
 
 /**
  * Graphic report renderable class.
@@ -64,18 +64,27 @@ class report_graphic_renderable implements renderable {
 
     public $eventsbycoursemodule;
 
+    protected $period;
+
     /**
-     * Constructor.
+     * Renderable constructor.
      *
      * @param stdClass|int $course (optional) course object or id.
+     * @param string $period the period of time.
+     * @throws coding_exception if period is invalid.
      */
-    public function __construct($course = null) {
+    public function __construct($course = null, $period = '1d') {
         if (!empty($course)) {
             if (is_int($course)) {
                 $course = get_course($course);
             }
             $this->course = $course;
         }
+
+        if (!array_key_exists($period, $this->get_period_list())) {
+            throw new coding_exception('The requested period('.$period.') is invalid.');
+        }
+        $this->period = $period;
     }
 
     /**
@@ -125,7 +134,7 @@ class report_graphic_renderable implements renderable {
         // Monthly user activity.
         $this->activitybyperiod = $graphreport->get_monthly_user_activity();
 
-        $this->usersgrades = $graphreport->get_users_grades();
+        //$this->usersgrades = $graphreport->get_users_grades();
 
         $this->eventsbycoursemodule = $graphreport->get_events_course_module();
     }
@@ -171,4 +180,24 @@ class report_graphic_renderable implements renderable {
         }
         return $users;
     }
+
+    /**
+     * Get a list of time periods.
+     *
+     * @return array list of periods
+     */
+    public function get_period_list() {
+        $period = array (
+            '1d' => 'Today',
+            '1w' => 'Last week',
+            '2w' => 'Last fortnight',
+            '1m' => 'Last month',
+            '3m' => 'Last 3 months',
+            '6m' => 'Last 6 months',
+            '1y' => 'Last year',
+        );
+
+        return $period;
+    }
+
 }

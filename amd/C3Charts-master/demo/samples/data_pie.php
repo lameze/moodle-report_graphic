@@ -1,0 +1,20 @@
+<?php
+/* -------------------------------------------------------
+ * C3Charts for PHP. Demo site
+ *
+ * MIT License
+ * -------------------------------------------------------
+ */
+
+use \Alto\Libs\C3Charts\Chart;
+
+$aData = [
+    'data1' => [30, 200, 100, 400, 150, 250],
+    'data2' => [20, 180, 240, 100, 190],
+    'data3' => [130, 80, 190, 50, 250, 150, 75],
+];
+$oChart1 = new Chart($aData);
+$oChart1->setChartType('pie');
+$oChart2 = $oChart1->slice(3, 1);
+
+// EOF
