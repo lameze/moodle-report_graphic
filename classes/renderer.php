@@ -44,26 +44,29 @@ class report_graphic_renderer extends plugin_renderer_base {
     protected function render_report_graphic(report_graphic_renderable $renderable) {
         $this->renderable = $renderable;
         $this->report_selector_form();
-        //$this->page->requires->css('/report/graphic/lib/c3/c3.css');
     }
-
+    
     /**
      * This function is used to generate and display course filter.
      *
      */
     public function report_selector_form() {
+        global $CFG;
+
+        require_once($CFG->dirroot . '/report/graphic/filter_form.php');
+
+
         $renderable = $this->renderable;
-        $courses = $renderable->get_course_list();
-        $selectedcourseid = empty($renderable->course) ? 0 : $renderable->course->id;
+
+        //$courses = $renderable->get_course_list();
+        //$selectedcourseid = empty($renderable->course) ? 0 : $renderable->course->id;
         //$users = $renderable->get_user_list();
-        $period = $renderable->get_period_list();
-        $selecteduserid = empty($renderable->user) ? 0 : $renderable->user->id;
+        //$period = $renderable->get_period_list();
+        //$selecteduserid = empty($renderable->user) ? 0 : $renderable->user->id;
         echo html_writer::start_tag('form', array('class' => 'logselecform', 'action' => 'course.php', 'method' => 'get'));
         echo html_writer::start_div();
-        echo html_writer::label(get_string('selectacourse'), 'courseid', false);
-        echo html_writer::select($courses, "id", $selectedcourseid, null, array('id' => 'courseid'));
-        echo html_writer::label('Select a period', 'period', false);
-        echo html_writer::select($period, "period", null, false);
+        $mform = new filter_form;
+        $mform->display();
         echo html_writer::empty_tag('input', array('type' => 'submit', 'value' => get_string('generate', 'report_graphic')));
         echo html_writer::end_div();
         echo html_writer::end_tag('form');
@@ -73,26 +76,39 @@ class report_graphic_renderer extends plugin_renderer_base {
      */
     public function report_generate_charts() {
         $renderable = $this->renderable;
-        echo $renderable->get_gcharts_data();
-        echo "<h5>Events by user</h5>";
-        echo "<div id=\"chart\"></div>";
-        echo "<br /><hr /><br />";
-        echo "<h5>Most triggered events</h5>";
-        echo "<div id=\"chart_most_triggered\"></div>";
-        echo "<br /><hr /><br />";
-        echo "<h5>Events by month</h5>";
-        echo "<div id=\"chart_events_monthly\"></div>";
-        echo "<br /><hr /><br />";
-        echo "<div id=\"chart_events_cm\"></div>";
-        echo html_writer::start_tag('script', array('type' => 'text/javascript'));
-        $this->get_chart_json($renderable->mostactiveusers);
-        $this->get_chart_json($renderable->mosttriggeredevents);
-        $this->get_chart_json($renderable->activitybyperiod);
-        $this->get_chart_json($renderable->eventsbycoursemodule);
-        echo html_writer::end_tag('script');
-        //echo $renderable->usersgrades;
+        $renderable->get_charts_data();
+
+
+        $this->get_chart('Events by user', 'eventsbyuser', $renderable->mostactiveusers);
+        $this->get_chart('Most triggered events', 'mosttriggered', $renderable->mosttriggeredevents);
+        $this->get_chart('Events by course module', 'eventsbycm', $renderable->eventsbycoursemodule);
     }
 
+    /**
+     * Get the JSON from script tag and fill the canvas.
+     *
+     * @param string $title the chart title
+     * @param string $id id of the script tag
+     * @param mixed $chartdata the report_graphic data.
+     */
+    protected function get_chart($title, $id, $chartdata) {
+        // Header.
+        echo html_writer::start_tag('h4') . $title . html_writer::end_tag('h4');
+        echo html_writer::empty_tag('hr');
+        //echo html_writer::start_tag('div', array('style' => 'width: 70%'));
+        echo '<div style="width: 70%">';
+        $canvasid = $id . 'canvas';
+        echo html_writer::start_tag('canvas', array('id' => $canvasid)) . html_writer::end_tag('canvas');
+        //echo html_writer::end_tag('div');
+        echo '</div>';
+        // Script tag that contains the
+        echo html_writer::start_tag('script', array('type' => 'data-chart', 'id' => $id));
+        echo json_encode($chartdata);
+        echo $this->get_chart_js($id);
+        echo html_writer::end_tag('script');
+        echo html_writer::empty_tag('br ');
+    }
+    
     /**
      * Display site related graphic reports.
      */
@@ -101,7 +117,12 @@ class report_graphic_renderer extends plugin_renderer_base {
         echo $this->renderable->mostactivecourses;
     }
 
-    public function get_chart_json($chartjson) {
-        $this->page->requires->js_amd_inline("require([\"report_graphic/c3loader\"], function(c3) { ".$chartjson->render('chart', true)." });");
+    /**
+     * Call Chart.js wrapper.
+     *
+     * @param string $scriptid the script tag id.
+     */
+    public function get_chart_js($scriptid) {
+        $this->page->requires->js_call_amd('report_graphic/chart', 'init', array($scriptid));
     }
 }

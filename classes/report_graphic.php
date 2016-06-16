@@ -22,7 +22,13 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
-require_once($CFG->dirroot . '/report/graphic/lib/gcharts.php');
+require_once $CFG->dirroot . '/report/graphic/lib/Chart.js-PHP/class/ChartJS.php';
+require_once $CFG->dirroot . '/report/graphic/lib/Chart.js-PHP/class/ChartJS_Line.php';
+require_once $CFG->dirroot . '/report/graphic/lib/Chart.js-PHP/class/ChartJS_Bar.php';
+require_once $CFG->dirroot . '/report/graphic/lib/Chart.js-PHP/class/ChartJS_Radar.php';
+require_once $CFG->dirroot . '/report/graphic/lib/Chart.js-PHP/class/ChartJS_PolarArea.php';
+require_once $CFG->dirroot . '/report/graphic/lib/Chart.js-PHP/class/ChartJS_Pie.php';
+require_once $CFG->dirroot . '/report/graphic/lib/Chart.js-PHP/class/ChartJS_Doughnut.php';
 /**
  * Graphic report class.
  *
@@ -32,7 +38,7 @@ require_once($CFG->dirroot . '/report/graphic/lib/gcharts.php');
  * @copyright  2015 onwards Simey Lameze <lameze@gmail.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class report_graphic extends Gcharts {
+class report_graphic {
 
     /**
      * @var int|null the course id.
@@ -50,6 +56,9 @@ class report_graphic extends Gcharts {
      * @var  string Log reader table name.
      */
     protected $logtable;
+
+    protected $colors = ["#FF6384", "#36A2EB", "#FFCE56", "#0d737f", "#6eeb83", "#e4ff1a", "#e8aa14", "#ff5714", "#bce784", "#5dd39e", "#348aa7", "#525174", "#513b56"];
+    protected $hovercolors = ["#ffd0da", "#9ad0f5", "#ffe6aa", "#8df3ff", "#18CFE5", "#e4ff1a", "#e8aa14", "#ff5714", "#bce784", "#5dd39e", "#348aa7", "#525174", "#513b56"];
 
     /**
      * Graphic report constructor.
@@ -73,37 +82,6 @@ class report_graphic extends Gcharts {
     }
 
     /**
-     * Get most triggered events by course id.
-     *
-     * @return string google charts data.
-     */
-    public function get_most_triggered_events() {
-        global $DB;
-
-        $sql = "SELECT l.eventname, COUNT(*) as quant
-                  FROM {" . $this->logtable . "} l
-                 WHERE l.courseid = ".$this->courseid."
-                 GROUP BY l.eventname
-                 ORDER BY quant DESC";
-        $result = $DB->get_records_sql($sql);
-
-        // Graphic header, must be always the first element of the array.
-        $events[0] = array(get_string('event', 'report_graphic'), get_string('quantity', 'report_graphic'));
-
-        $i = 1;
-        foreach ($result as $eventdata) {
-            $event = $eventdata->eventname;
-            $events[$i] = array($event::get_name(), (int)$eventdata->quant);
-            $i++;
-        }
-
-        $this->load(array('graphic_type' => 'ColumnChart'));
-        $this->set_options(array('title' => get_string('eventsmosttriggered', 'report_graphic')));
-
-        return $this->generate($events);
-    }
-
-    /**
      * Get users that most triggered events by course id.
      *
      * @return string google charts data.
@@ -118,22 +96,59 @@ class report_graphic extends Gcharts {
               GROUP BY l.relateduserid, u.firstname, u.lastname
               ORDER BY quant DESC";
         $result = $DB->get_records_sql($sql);
-
-        // Graphic header, must be the first element of the array.
-        $useractivity[0] = array(get_string('user'), get_string('percentage', 'report_graphic'));
-
-        // Organize the data in the required format.
-        $i = 1;
-        foreach ($result as $userdata) {
+        
+        foreach ($result as $userid => $userdata) {
             $username = $userdata->firstname . ' ' . $userdata->lastname;
-            $useractivity[$i] = array($username, (int)$userdata->quant);
-            $i++;
+            $usernames[$userid] = $username;
+            $useractivity[$userid] = (int)$userdata->quant;
         }
 
-        $this->load(array('graphic_type' => 'PieChart'));
-        $this->set_options(array('title' => get_string('usersactivity', 'report_graphic')));
+        $chart = new stdClass();
+        $chart->type = 'doughnut';
+        $chart->data = new stdClass();
+        $chart->data->labels = array_values($usernames);
+        $chart->data->datasets = array();
+        $chart->data->datasets[0]['data'] = array_values($useractivity);
+        $chart->data->datasets[0]['backgroundColor'] = array_values($this->colors);
+        $chart->data->datasets[0]['hoverBackgroundColor'] = array_values($this->hovercolors);
 
-        return $this->generate($useractivity);
+        return $chart;
+    }
+
+    /**
+     * Get most triggered events by course id.
+     *
+     * @return string google charts data.
+     */
+    public function get_most_triggered_events() {
+        global $DB;
+
+        $sql = "SELECT l.eventname, COUNT(*) as quant
+                  FROM {" . $this->logtable . "} l
+                 WHERE l.courseid = ".$this->courseid."
+                 GROUP BY l.eventname
+                 ORDER BY quant DESC";
+        $result = $DB->get_records_sql($sql);
+
+        $events = array();
+        $i = 0;
+        foreach ($result as $eventdata) {
+            $event = $eventdata->eventname;
+            $events[$event::get_name()] = (int)$eventdata->quant;
+        }
+        $chart = new stdClass();
+        $chart->type = 'horizontalBar';
+        $chart->data = new stdClass();
+        $chart->data->datasets = array();
+        $chart->data->datasets[$i]['label'] = 'Most triggered events';
+        $chart->data->datasets[$i]['data'] = array_values($events);
+        $chart->data->datasets[$i]['backgroundColor'] = $this->colors[1];
+        $chart->data->datasets[$i]['hoverBackgroundColor'] = $this->hovercolors[1];
+        $chart->data->labels = array_keys($events);
+        $chart->options = new stdClass();
+        $chart->options->gridLines['display'] = 'false';
+
+        return $chart;
     }
 
     /**
@@ -257,229 +272,6 @@ class report_graphic extends Gcharts {
         return $this->generate($courseactivity);
     }
 
-    /**
-     * Builds the complete sql with all the joins to get the grade history data.
-     *
-     * @param bool $count setting this to true, returns an sql to get count only instead of the complete data records.
-     *
-     * @return array containing sql to use and an array of params.
-     */
-    public function get_users_grades($selecteduserid = null) {
-        global $DB;
-
-        $courseid = $this->courseid;
-        $months = cal_info(0);
-        $year = $this->year;
-        $montharr = array();
-        $avgarr = array();
-        // Build the query to get how many events each user has triggered grouping by month.
-        // This piece of code has few hacks to deal with cross-db issues but certainly can be improved.
-        // Also create required arrays of months and etc.
-        $sql = "SELECT u.id, u.firstname, u.lastname, ";
-        for ($m = 1; $m <= count($months['abbrevmonths']); $m++) {
-
-            // Get and format month name and number.
-            $monthname = $months['months'][$m];
-            $monthabbrev = $months['abbrevmonths'][$m];
-            $month = sprintf("%02d", $m);
-
-            // Get the first and the last day of the month.
-            $ymdfrom = "$year-$month-01";
-            $ymdto = date('Y-m-t', strtotime($ymdfrom));
-
-            // Convert to timestamp.
-            $date = new DateTime($ymdfrom);
-            $datefrom = $date->getTimestamp();
-            $date = new DateTime($ymdto);
-            $dateto = $date->getTimestamp();
-
-            $sql .= "(SELECT DISTINCT MAX(ggh.finalgrade)
-                    FROM {grade_grades_history} ggh
-                    JOIN {grade_items} gi ON gi.id = ggh.itemid
-                    WHERE gi.courseid = $courseid
-                    AND ggh.finalgrade IS NOT NULL
-                    AND timecreated >= $datefrom
-                    AND timecreated < $dateto
-                    AND u.id = ggh.userid
-                    GROUP BY ggh.userid
-                    ) AS $monthname";
-            // Add comma after the month name.
-            $sql .= ($m < 12 ? ',' : ' ');
-
-            // Create a empty array that will be filled after the results of this query.
-            $montharr[$monthabbrev][0] = $monthabbrev;
-            $avgarr[$monthabbrev][9999] = $monthabbrev;
-        }
-        $sql .= "FROM {user} u
-                ORDER BY u.id";
-        //print_object($sql);
-        $result = $DB->get_records_sql($sql);
-
-        $usersarr[0] = 'Month';
-
-        foreach ($result as $userid => $data) {
-
-            // Faster than use fullname function.
-            if (empty($usersarr[$userid])) {
-                $usersarr[$userid] = $data->firstname . ' ' . $data->lastname;
-            }
-
-            // Fill the array with the quantity of triggered events in the month, by user id.
-            $montharr['Jan'][$userid] = (int)$data->january;
-            $montharr['Feb'][$userid] = (int)$data->february;
-            $montharr['Mar'][$userid] = (int)$data->march;
-            $montharr['Apr'][$userid] = (int)$data->april;
-            $montharr['May'][$userid] = (int)$data->may;
-            $montharr['Jun'][$userid] = (int)$data->june;
-            $montharr['Jul'][$userid] = (int)$data->july;
-            $montharr['Aug'][$userid] = (int)$data->august;
-            $montharr['Sep'][$userid] = (int)$data->september;
-            $montharr['Oct'][$userid] = (int)$data->october;
-            $montharr['Nov'][$userid] = (int)$data->november;
-            $montharr['Dec'][$userid] = (int)$data->december;
-
-            if (!empty($selecteduserid)) {
-                $avgarr['Jan'][9999] += ((int)$data->january/18);
-                $avgarr['Feb'][9999] += ((int)$data->february/18);
-                $avgarr['Mar'][9999] += ((int)$data->march/18);
-                $avgarr['Apr'][9999] += ((int)$data->april/18);
-                $avgarr['May'][9999] += ((int)$data->may/18);
-                $avgarr['Jun'][9999] += ((int)$data->june/18);
-                $avgarr['Jul'][9999] += ((int)$data->july/18);
-                $avgarr['Aug'][9999] += ((int)$data->august/18);
-                $avgarr['Sep'][9999] += ((int)$data->september/18);
-                $avgarr['Oct'][9999] += ((int)$data->october/18);
-                $avgarr['Nov'][9999] += ((int)$data->november/18);
-                $avgarr['Dec'][9999] += ((int)$data->december/18);
-            }
-        }
-//print_object($avgarr);
-        // The header of the report, must be all users
-        $final = array(0 => $usersarr);
-
-        // Organize the data in the required format of the chart.
-        for ($m = 1; $m <= count($months['abbrevmonths']); $m++) {
-            $monthabbrev = $months['abbrevmonths'][$m];
-            $final[$m] = $montharr[$monthabbrev];
-        }
-
-        $this->load(array('graphic_type' => 'linechart'));
-        $this->set_options(array('title' => get_string('gradesbymonth', 'report_graphic', $year), 'curveType' => 'function'));
-
-        return $this->generate($final);
-    }
-
-    /**
-     * Builds the complete sql with all the joins to get the grade history data.
-     *
-     * @param bool $count setting this to true, returns an sql to get count only instead of the complete data records.
-     *
-     * @return array containing sql to use and an array of params.
-     */
-    public function get_user_grades($selecteduserid) {
-        global $DB;
-
-        $courseid = $this->courseid;
-        $months = cal_info(0);
-        $year = $this->year;
-        $montharr = array();
-        $avgarr = array();
-        // Build the query to get how many events each user has triggered grouping by month.
-        // This piece of code has few hacks to deal with cross-db issues but certainly can be improved.
-        // Also create required arrays of months and etc.
-        $sql = "SELECT u.id, u.firstname, u.lastname, ";
-        for ($m = 1; $m <= count($months['abbrevmonths']); $m++) {
-
-            // Get and format month name and number.
-            $monthname = $months['months'][$m];
-            $monthabbrev = $months['abbrevmonths'][$m];
-            $month = sprintf("%02d", $m);
-
-            // Get the first and the last day of the month.
-            $ymdfrom = "$year-$month-01";
-            $ymdto = date('Y-m-t', strtotime($ymdfrom));
-
-            // Convert to timestamp.
-            $date = new DateTime($ymdfrom);
-            $datefrom = $date->getTimestamp();
-            $date = new DateTime($ymdto);
-            $dateto = $date->getTimestamp();
-
-            $sql .= "(SELECT DISTINCT MAX(ggh.finalgrade)
-                        FROM {grade_grades_history} ggh
-                        JOIN {grade_items} gi ON gi.id = ggh.itemid
-                       WHERE gi.courseid = $courseid
-                         AND ggh.finalgrade IS NOT NULL
-                         AND timecreated >= $datefrom
-                         AND timecreated < $dateto
-                         AND u.id = ggh.userid
-                    GROUP BY ggh.userid) AS $monthname";
-
-            // Add comma after the month name.
-            $sql .= ($m < 12 ? ',' : ' ');
-
-            // Create a empty array that will be filled after the results of this query.
-            $montharr[$monthabbrev][0] = $monthabbrev;
-            $avgarr[$monthabbrev][9999] = $monthabbrev;
-        }
-        $sql .= "FROM {user} u
-                ORDER BY u.id";
-        //print_object($sql);
-        $result = $DB->get_records_sql($sql);
-
-        $usersarr[0] = 'Month';
-
-        foreach ($result as $userid => $data) {
-
-            // Faster than use fullname function.
-            if (empty($usersarr[$userid])) {
-                $usersarr[$userid] = $data->firstname . ' ' . $data->lastname;
-            }
-
-            // Fill the array with the quantity of triggered events in the month, by user id.
-            $montharr['Jan'][$userid] = (int)$data->january;
-            $montharr['Feb'][$userid] = (int)$data->february;
-            $montharr['Mar'][$userid] = (int)$data->march;
-            $montharr['Apr'][$userid] = (int)$data->april;
-            $montharr['May'][$userid] = (int)$data->may;
-            $montharr['Jun'][$userid] = (int)$data->june;
-            $montharr['Jul'][$userid] = (int)$data->july;
-            $montharr['Aug'][$userid] = (int)$data->august;
-            $montharr['Sep'][$userid] = (int)$data->september;
-            $montharr['Oct'][$userid] = (int)$data->october;
-            $montharr['Nov'][$userid] = (int)$data->november;
-            $montharr['Dec'][$userid] = (int)$data->december;
-
-            if (!empty($selecteduserid)) {
-                $avgarr['Jan'][9999] += ((int)$data->january/18);
-                $avgarr['Feb'][9999] += ((int)$data->february/18);
-                $avgarr['Mar'][9999] += ((int)$data->march/18);
-                $avgarr['Apr'][9999] += ((int)$data->april/18);
-                $avgarr['May'][9999] += ((int)$data->may/18);
-                $avgarr['Jun'][9999] += ((int)$data->june/18);
-                $avgarr['Jul'][9999] += ((int)$data->july/18);
-                $avgarr['Aug'][9999] += ((int)$data->august/18);
-                $avgarr['Sep'][9999] += ((int)$data->september/18);
-                $avgarr['Oct'][9999] += ((int)$data->october/18);
-                $avgarr['Nov'][9999] += ((int)$data->november/18);
-                $avgarr['Dec'][9999] += ((int)$data->december/18);
-            }
-        }
-        //print_object($avgarr);
-        // The header of the report, must be all users
-        $final = array(0 => $usersarr);
-
-        // Organize the data in the required format of the chart.
-        for ($m = 1; $m <= count($months['abbrevmonths']); $m++) {
-            $monthabbrev = $months['abbrevmonths'][$m];
-            $final[$m] = $montharr[$monthabbrev];
-        }
-
-        $this->load(array('graphic_type' => 'linechart'));
-        $this->set_options(array('title' => get_string('gradesbymonth', 'report_graphic', $year), 'curveType' => 'function'));
-
-        return $this->generate($final);
-    }
 
     public function get_events_course_module() {
         global $DB;
@@ -496,24 +288,53 @@ class report_graphic extends Gcharts {
                 GROUP BY l.contextinstanceid, quant_c,quant_r,quant_u,quant_d
                 ORDER BY total DESC";
         $result = $DB->get_records_sql($sql, array('courseid' => $this->courseid));
-
         // Format the data to google charts.
-        $i = 1;
-        $cmactivity[0] = array('Module', 'Create', 'Read', 'Update','Delete');
+        $i = 0;
+        $cmactivity = array('Create', 'Read', 'Update','Delete');
+        $chart = new stdClass();
+        $chart->type = 'bar';
+        $chart->data = new stdClass();
+        $chart->data->datasets = array();
+        $totals = array();
         foreach ($result as $cmid => $values) {
             if (!empty($cmid)) {
                 $coursemodule = get_coursemodule_from_id('',$cmid, $this->courseid);
 
                 if (!empty($coursemodule)) {
-                    $title = $coursemodule->name .'('.$coursemodule->modname.')';
-                    $cmactivity[$i] = array($title, (int)$values->quant_c, (int)$values->quant_r,(int)$values->quant_u, (int)$values->quant_d);
+                    $cmtitles[] = $coursemodule->name .'('.$coursemodule->modname.')';
+                    $cmactivitydata[$i] = array((int)$values->quant_c, (int)$values->quant_r,(int)$values->quant_u, (int)$values->quant_d);
+                    $totals['Create'][$i] = (int)$values->quant_c;
+                    $totals['Read'][$i] = (int)$values->quant_r;
+                    $totals['Update'][$i] = (int)$values->quant_u;
+                    $totals['Delete'][$i] = (int)$values->quant_d;
                     $i++;
                 }
             }
         }
 
-        $this->load(array('graphic_type' => 'ColumnChart'));
-        $this->set_options(array('title' => 'Events by Course Module (CRUD)', 'isStacked' => true));
-        return $this->generate($cmactivity);
+        $i = 0;
+        $colors = array('rgba(151,187,205,0.5)', '#70C1B3', '#FFE066', '#247BA0', '#F25F5C');
+        $chart->data->datasets[$i]['type'] = 'line';
+        $chart->data->datasets[$i]['data'] = array_values($totals['Read']);
+        $chart->data->datasets[$i]['label'] = 'Average';
+        $chart->data->datasets[$i]['backgroundColor'] = $colors[$i];;
+        $chart->data->datasets[$i]['borderColor'] = 'black';
+        $chart->data->datasets[$i]['borderWidth'] = '2';
+        $i++;
+        foreach ($cmactivity as $activity) {
+            $chart->data->datasets[$i]['data'] = array_values($totals[$activity]);
+            $chart->data->datasets[$i]['type'] = 'bar';
+            $chart->data->datasets[$i]['label'] = $activity;
+            $chart->data->datasets[$i]['backgroundColor'] = $colors[$i];
+            $chart->data->datasets[$i]['hoverBackgroundColor'] = $colors[$i];
+            $i++;
+        }
+
+        $chart->data->labels = array_values($cmtitles);
+        $chart->options = new stdClass();
+        $chart->options->tooltips['mode'] = 'label';
+        $chart->options->scales['xAxes'][0]['stacked'] = 'true';
+        $chart->options->scales['yAxes'][0]['stacked'] = 'true';
+        return $chart;
     }
 }

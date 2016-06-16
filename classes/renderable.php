@@ -22,7 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die;
-require_once($CFG->dirroot . '/report/graphic/classes/report_graphic_c3.php');
+require_once($CFG->dirroot . '/report/graphic/classes/report_graphic.php');
 
 /**
  * Graphic report renderable class.
@@ -122,7 +122,7 @@ class report_graphic_renderable implements renderable {
     /**
      * Displays course related graph charts.
      */
-    public function get_gcharts_data() {
+    public function get_charts_data() {
         $graphreport = new report_graphic($this->course->id);
 
         // User Activity Pie Chart.
@@ -132,7 +132,7 @@ class report_graphic_renderable implements renderable {
         $this->mosttriggeredevents = $graphreport->get_most_triggered_events();
 
         // Monthly user activity.
-        $this->activitybyperiod = $graphreport->get_monthly_user_activity();
+        //$this->activitybyperiod = $graphreport->get_monthly_user_activity();
 
         //$this->usersgrades = $graphreport->get_users_grades();
 
