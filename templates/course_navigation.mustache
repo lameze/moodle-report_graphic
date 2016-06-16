@@ -1,0 +1,22 @@
+<div class="pull-right well">
+<form class="report-graphic-course-navigation">
+{{#hascourses}}
+<span>
+<label for="course-nav-{{uniqid}}" class="accesshide">{{#str}}jumptocourse, report_graphic{{/str}}</label>
+<select id="course-nav-{{uniqid}}">
+{{#users}}
+<option value="{{id}}" {{#selected}}selected="selected"{{/selected}}>{{fullname}}</option>
+{{/users}}
+</select>
+</span>
+{{/hascourses}}
+</form>
+</div>
+{{#js}}
+require(['core/form-autocomplete', 'report_graphic/course_navigation'], function(autocomplete, nav) {
+    (new nav('#user-nav-{{uniqid}}', '{{baseurl}}', {{userid}}, {{courseid}}));
+{{#hasusers}}
+    autocomplete.enhance('#user-nav-{{uniqid}}', false, false, {{# quote }}{{# str }}jumptouser, tool_lp{{/ str }}{{/ quote }});
+{{/hasusers}}
+});
+{{/js}}

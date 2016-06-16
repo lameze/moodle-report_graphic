@@ -15,23 +15,38 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Lang strings.
- *
- * Language strings to be used by report/graphic.
+ * Graphic report summarize logs.
  *
  * @package    report_graphic
- * @copyright  Simey Lameze <simey@moodle.com>
+ * @copyright  2016 Simey Lameze <simey@moodle.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-$string['coursesactivity'] = 'Courses activity (Events by course)';
-$string['event'] = 'Event';
-$string['eventsmosttriggered'] = 'Most triggered events';
-$string['eventsbymonth'] = 'Events by month ({$a})';
-$string['graphic:view'] = 'View events graphic report';
-$string['gradesbymonth'] = 'Max Grades by month ({$a})';
-$string['generate'] = 'Generate';
-$string['menu'] = 'Events Graphic Report';
-$string['percentage'] = 'Percentage';
-$string['pluginname'] = 'Events Graphic Report';
-$string['quantity'] = 'quantity';
-$string['usersactivity'] = 'User activity (Events by user)';
+namespace report_graphic\task;
+
+/**
+ * Graphic report class to summarize logs.
+ *
+ * @package    report_graphic
+ * @copyright  2016 Simey Lameze <simey@moodle.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class summarize_logs extends \core\task\scheduled_task {
+
+    /**
+     * Get a descriptive name for this task (shown to admins).
+     *
+     * @return string
+     */
+    public function get_name() {
+        return get_string('summarizelogs', 'report_graphic');
+    }
+
+    /**
+     * Run users sync.
+     */
+    public function execute() {
+        global $CFG;
+        require_once($CFG->dirroot . '/report/graphic/classes/report_graphic.php');
+    }
+
+}

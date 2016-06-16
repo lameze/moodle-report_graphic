@@ -58,18 +58,32 @@ class report_graphic_renderable implements renderable {
      */
     public $mostactivecourses;
 
+    public $showusers;
+
+    /** @var  string stores the course module events by CRUD. */
+    public $eventsbycoursemodule;
+
+    protected $period;
+
     /**
-     * Constructor.
+     * Renderable constructor.
      *
      * @param stdClass|int $course (optional) course object or id.
+     * @param string $period the period of time.
+     * @throws coding_exception if period is invalid.
      */
-    public function __construct($course = null) {
+    public function __construct($course = null, $period = '1d') {
         if (!empty($course)) {
             if (is_int($course)) {
                 $course = get_course($course);
             }
             $this->course = $course;
         }
+
+        if (!array_key_exists($period, $this->get_period_list())) {
+            throw new coding_exception('The requested period('.$period.') is invalid.');
+        }
+        $this->period = $period;
     }
 
     /**
@@ -107,7 +121,7 @@ class report_graphic_renderable implements renderable {
     /**
      * Displays course related graph charts.
      */
-    public function get_gcharts_data() {
+    public function get_charts_data() {
         $graphreport = new report_graphic($this->course->id);
 
         // User Activity Pie Chart.
@@ -118,6 +132,10 @@ class report_graphic_renderable implements renderable {
 
         // Monthly user activity.
         $this->activitybyperiod = $graphreport->get_monthly_user_activity();
+
+        //$this->usersgrades = $graphreport->get_users_grades();
+
+        $this->eventsbycoursemodule = $graphreport->get_events_course_module();
     }
 
     /**
@@ -127,4 +145,58 @@ class report_graphic_renderable implements renderable {
         $graphreport = new report_graphic();
         $this->mostactivecourses = $graphreport->get_courses_activity();
     }
+
+    /**
+     * Return list of users.
+     *
+     * @return array list of users.
+     */
+    public function get_user_list() {
+        global $CFG, $SITE;
+
+        $courseid = $SITE->id;
+        if (!empty($this->course)) {
+            $courseid = $this->course->id;
+        }
+        $context = context_course::instance($courseid);
+        $limitfrom = empty($this->showusers) ? 0 : '';
+        $limitnum  = empty($this->showusers) ? COURSE_MAX_USERS_PER_DROPDOWN + 1 : '';
+        $courseusers = get_enrolled_users($context, '', 0, 'u.id, ' . get_all_user_name_fields(true, 'u'),
+            null, $limitfrom, $limitnum);
+
+        if (count($courseusers) < COURSE_MAX_USERS_PER_DROPDOWN && !$this->showusers) {
+            $this->showusers = true;
+        }
+
+        $users = array();
+        if ($this->showusers) {
+            if ($courseusers) {
+                foreach ($courseusers as $courseuser) {
+                    $users[$courseuser->id] = fullname($courseuser, has_capability('moodle/site:viewfullnames', $context));
+                }
+            }
+            $users[$CFG->siteguest] = get_string('guestuser');
+        }
+        return $users;
+    }
+
+    /**
+     * Get a list of time periods.
+     *
+     * @return array list of periods
+     */
+    public function get_period_list() {
+        $period = array (
+            '1d' => 'Today',
+            '1w' => 'Last week',
+            '2w' => 'Last fortnight',
+            '1m' => 'Last month',
+            '3m' => 'Last 3 months',
+            '6m' => 'Last 6 months',
+            '1y' => 'Last year',
+        );
+
+        return $period;
+    }
+
 }

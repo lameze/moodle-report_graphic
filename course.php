@@ -23,16 +23,14 @@
  */
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
-require_once($CFG->dirroot . '/course/lib.php');
-
 require_login();
-
-$context = context_system::instance();
-require_capability('report/graphic:view', $context);
 $courseid = required_param('id', 'int');
+$period = optional_param('period', '1d', PARAM_ALPHANUMEXT);
 if (!$course = get_course($courseid)) {
     print_error('nocourseid');
 }
+$context = context_course::instance($courseid);
+require_capability('report/graphic:view', $context);
 admin_externalpage_setup('report_graphic');
 $actionurl = new moodle_url('/report/graphic/course.php');
 $PAGE->set_context($context);
@@ -40,9 +38,13 @@ $PAGE->set_url('/report/graphic/course.php', array('courseid' => $courseid));
 $PAGE->set_title(get_string('pluginname', 'report_graphic'));
 $PAGE->set_heading(get_string('pluginname', 'report_graphic'));
 $PAGE->set_pagelayout('report');
+$PAGE->requires->css('/report/graphic/lib/c3/c3.css');
+
 echo $OUTPUT->header();
-$renderable = new report_graphic_renderable($course);
+
+$renderable = new report_graphic_renderable($course, $period);
 $renderer = $PAGE->get_renderer('report_graphic');
 echo $renderer->render($renderable);
 echo $renderer->report_generate_charts();
+
 echo $OUTPUT->footer();

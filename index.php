@@ -24,7 +24,7 @@
 require_once(__DIR__ . '/../../config.php');
 require_once($CFG->libdir . '/adminlib.php');
 require_once($CFG->dirroot . '/course/lib.php');
-
+require_once('filter_form.php');
 require_login();
 admin_externalpage_setup('report_graphic');
 $context = context_system::instance();
@@ -38,6 +38,8 @@ $PAGE->set_pagelayout('report');
 echo $OUTPUT->header();
 $renderable = new report_graphic_renderable();
 $renderer = $PAGE->get_renderer('report_graphic');
+$mform = new filter_form;
+$mform->display();
 echo $renderer->render($renderable);
 echo $renderer->report_course_activity_chart();
 echo $OUTPUT->footer();

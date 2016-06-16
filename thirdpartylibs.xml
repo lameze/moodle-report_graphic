@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <libraries>
     <library>
-        <location>lib/gcharts.php</location>
-        <name>Gcharts</name>
-        <version>1.2.2</version>
-        <license>Freeware</license>
+        <location>amd/src/Chart.bundle.js</location>
+        <name>Chart.js</name>
+        <version>2.1.6</version>
+        <license>MIT</license>
         <licenseversion>1.0</licenseversion>
     </library>
 </libraries>
